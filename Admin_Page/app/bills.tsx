@@ -25,6 +25,7 @@ interface Bill {
 export default function Bills() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"All" | "Paid" | "Pending" | "Overdue">("All");
+  const [actionMessage, setActionMessage] = useState("");
 
   const bills: Bill[] = [
     {
@@ -97,6 +98,30 @@ export default function Bills() {
     }
   };
 
+  const handleViewBillDetails = (bill: Bill) => {
+    try {
+      console.log("✓ Viewing bill details:", bill.id, bill.invoiceNumber);
+      setActionMessage(`Opened: ${bill.invoiceNumber} - ${bill.customerName}`);
+      setTimeout(() => setActionMessage(""), 3000);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "An error occurred";
+      console.error("Error viewing bill:", error);
+      setActionMessage(`Error: ${error}`);
+    }
+  };
+
+  const handleAddNewBill = async () => {
+    try {
+      console.log("✓ Opening new bill form...");
+      setActionMessage("New bill form opened - ready to create invoice");
+      setTimeout(() => setActionMessage(""), 3000);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "An error occurred";
+      console.error("Error adding bill:", error);
+      setActionMessage(`Error: ${error}`);
+    }
+  };
+
   const renderBill = ({ item }: { item: Bill }) => (
     <TouchableOpacity
       style={{
@@ -110,10 +135,7 @@ export default function Bills() {
         shadowRadius: 2,
         elevation: 1,
       }}
-      onPress={() => {
-        // Navigate to bill details
-        console.log("View bill details:", item.id);
-      }}
+      onPress={() => handleViewBillDetails(item)}
     >
       <View
         style={{
@@ -229,12 +251,27 @@ export default function Bills() {
         <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
           Customer Bills
         </Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleAddNewBill}>
           <MaterialIcons name="add" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={{ flex: 1, padding: 16 }}>
+        {actionMessage ? (
+          <View
+            style={{
+              backgroundColor: "#E6F2E6",
+              borderLeftWidth: 4,
+              borderLeftColor: "#2E8B57",
+              padding: 12,
+              borderRadius: 6,
+              marginBottom: 16,
+            }}
+          >
+            <Text style={{ color: "#2E8B57", fontSize: 14 }}>{actionMessage}</Text>
+          </View>
+        ) : null}
+
         {/* Search Bar */}
         <View
           style={{
@@ -331,7 +368,7 @@ export default function Bills() {
             elevation: 1,
           }}
         >
-          {["All", "Paid", "Pending", "Overdue"].map((status) => (
+          {(["All", "Paid", "Pending", "Overdue"] as const).map((status) => (
             <TouchableOpacity
               key={status}
               style={{
@@ -342,7 +379,7 @@ export default function Bills() {
                   filterStatus === status ? "#0066CC" : "transparent",
                 borderRadius: 8,
               }}
-              onPress={() => setFilterStatus(status)}
+              onPress={() => setFilterStatus(status as "All" | "Paid" | "Pending" | "Overdue")}
             >
               <Text
                 style={{

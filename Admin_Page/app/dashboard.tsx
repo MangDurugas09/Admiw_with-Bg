@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  Image,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -17,15 +18,15 @@ interface StatItem {
   title: string;
   value: string;
   change: string;
-  icon: string;
+  icon: "people" | "attach-money" | "subscriptions" | "receipt";
   color: string;
 }
 
 interface QuickActionItem {
   id: string;
   title: string;
-  icon: string;
-  route: string;
+  icon: "people" | "receipt" | "subscriptions" | "trending-up" | "dashboard" | "settings";
+  route: "/" | "/bills" | "/dashboard";
   color: string;
 }
 
@@ -39,7 +40,7 @@ interface ActivityItem {
 
 export default function Dashboard() {
 
-  const stats = [
+  const stats: StatItem[] = [
     {
       id: "1",
       title: "Total Users",
@@ -51,7 +52,7 @@ export default function Dashboard() {
     {
       id: "2",
       title: "Monthly Revenue",
-      value: "$45,230",
+      value: "₱45,230",
       change: "+8%",
       icon: "attach-money",
       color: "#28A745",
@@ -74,12 +75,12 @@ export default function Dashboard() {
     },
   ];
 
-  const quickActions = [
+  const quickActions: QuickActionItem[] = [
     {
       id: "1",
       title: "Manage Users",
       icon: "people",
-      route: "/users",
+      route: "/",
       color: "#0066CC",
     },
     {
@@ -93,28 +94,28 @@ export default function Dashboard() {
       id: "3",
       title: "Subscriptions",
       icon: "subscriptions",
-      route: "/subscriptions",
+      route: "/dashboard",
       color: "#FFC107",
     },
     {
       id: "4",
       title: "Earnings Report",
       icon: "trending-up",
-      route: "/earnings",
+      route: "/dashboard",
       color: "#DC3545",
     },
     {
       id: "5",
       title: "Billing Dashboard",
       icon: "dashboard",
-      route: "/billing",
+      route: "/bills",
       color: "#6F42C1",
     },
     {
       id: "6",
       title: "Settings",
       icon: "settings",
-      route: "/settings",
+      route: "/dashboard",
       color: "#6C757D",
     },
   ];
@@ -302,39 +303,72 @@ export default function Dashboard() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: "#0066CC",
-          paddingTop: 50,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <View>
-          <Text style={{ fontSize: 24, fontWeight: "bold", color: "white" }}>
-            Admin Dashboard
-          </Text>
-          <Text style={{ fontSize: 14, color: "#B3D9F2", marginTop: 4 }}>
-            Welcome back, Admin
-          </Text>
-        </View>
-        <TouchableOpacity
+      {/* Header with Image Background */}
+      <View style={{ position: "relative", height: 120 }}>
+        <Image
+          source={{
+            uri: "https://d1ththk5stqb83.cloudfront.net/Main/Pages/Industry+Videos/Thumbnails/Power+Generation.jpg",
+          }}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: "rgba(255,255,255,0.2)",
-            justifyContent: "center",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100%",
+            height: "100%",
+          }}
+          resizeMode="cover"
+        />
+        {/* Dark Overlay */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+          }}
+        />
+        {/* Header Content */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingTop: 50,
+            paddingBottom: 20,
+            paddingHorizontal: 20,
+            flexDirection: "row",
+            justifyContent: "space-between",
             alignItems: "center",
           }}
-          onPress={() => router.push("/profile")}
         >
-          <MaterialIcons name="person" size={24} color="white" />
-        </TouchableOpacity>
+          <View>
+            <Text style={{ fontSize: 24, fontWeight: "bold", color: "white" }}>
+              ADMIN Dashboard
+            </Text>
+            <Text style={{ fontSize: 14, color: "#E6F4FE", marginTop: 4 }}>
+              Welcome back, Admin
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+            onPress={() => router.push("/")}
+          >
+            <MaterialIcons name="person" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={{ flex: 1 }}>
