@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchReceipts, patchReceiptStatus, type ReceiptRecord } from "./receiptsApi";
+import {
+    deleteReceipt,
+    fetchReceipts,
+    patchReceiptStatus,
+    type ReceiptRecord,
+} from "./receiptsApi";
 
 export function useReceipts() {
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
@@ -14,7 +19,10 @@ export function useReceipts() {
       const response = await fetchReceipts();
       setReceipts(response.receipts);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to load receipts";
+      const message =
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to load receipts";
       setError(message);
     } finally {
       setLoading(false);
@@ -26,14 +34,25 @@ export function useReceipts() {
   }, [refresh]);
 
   const updateStatus = useCallback(
-    async (receiptId: string, userId: string, status: "Approved" | "Rejected") => {
+    async (
+      receiptId: string,
+      userId: string,
+      status: "Approved" | "Rejected" | "Pending Verification",
+    ) => {
       await patchReceiptStatus(receiptId, { userId, status });
       setReceipts((current) =>
-        current.map((item) => (item.id === receiptId ? { ...item, status } : item))
+        current.map((item) =>
+          item.id === receiptId ? { ...item, status } : item,
+        ),
       );
     },
-    []
+    [],
   );
+
+  const deleteReceiptItem = useCallback(async (receiptId: string) => {
+    await deleteReceipt(receiptId);
+    setReceipts((current) => current.filter((item) => item.id !== receiptId));
+  }, []);
 
   return {
     receipts,
@@ -41,5 +60,6 @@ export function useReceipts() {
     error,
     refresh,
     updateStatus,
+    deleteReceipt: deleteReceiptItem,
   };
 }

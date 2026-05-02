@@ -1,11 +1,15 @@
 import { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Text, View, useWindowDimensions } from "react-native";
 import { AdminShell } from "@/components/AdminShell";
-import { palette } from "@/lib/theme";
+import { useThemePalette } from "@/lib/theme";
 import { useAdminUsers } from "@/lib/useAdminUsers";
 
 export default function Dashboard() {
+  const palette = useThemePalette();
   const { users, stats } = useAdminUsers();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const chartMaxWidth = Math.max(Math.min(width - (isMobile ? 76 : 340), 320), 120);
 
   const monthlyChart = useMemo(() => {
     const points = users.map((user) => ({
@@ -17,9 +21,9 @@ export default function Dashboard() {
 
     return points.slice(0, 8).map((point) => ({
       ...point,
-      width: Math.max((point.value / max) * 320, 26),
+      width: Math.max((point.value / max) * chartMaxWidth, 26),
     }));
-  }, [users]);
+  }, [chartMaxWidth, users]);
 
   return (
     <AdminShell
@@ -33,8 +37,8 @@ export default function Dashboard() {
         <Metric label="Unpaid Bills" value={String(stats.unpaidBills)} />
       </View>
 
-      <View style={panel}>
-        <Text style={panelTitle}>Usage Chart (Current Snapshot)</Text>
+      <View style={panel(palette)}>
+        <Text style={panelTitle(palette)}>Usage Chart (Current Snapshot)</Text>
         {monthlyChart.length === 0 ? (
           <Text style={{ color: palette.textMuted }}>No usage data yet.</Text>
         ) : (
@@ -60,15 +64,17 @@ export default function Dashboard() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
+  const palette = useThemePalette();
+
   return (
     <View
       style={{
-        minWidth: 240,
+        minWidth: 220,
         flex: 1,
         borderWidth: 1,
         borderColor: palette.cardBorder,
         borderRadius: 14,
-        backgroundColor: "rgba(7, 21, 68, 0.9)",
+        backgroundColor: palette.panel,
         padding: 14,
       }}
     >
@@ -80,17 +86,17 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-const panel = {
+const panel = (palette: ReturnType<typeof useThemePalette>) => ({
   borderWidth: 1,
   borderColor: palette.cardBorder,
   borderRadius: 14,
-  backgroundColor: "rgba(7, 21, 68, 0.9)",
+  backgroundColor: palette.panel,
   padding: 16,
-};
+});
 
-const panelTitle = {
+const panelTitle = (palette: ReturnType<typeof useThemePalette>) => ({
   color: palette.text,
   fontSize: 18,
   fontWeight: "800" as const,
   marginBottom: 12,
-};
+});

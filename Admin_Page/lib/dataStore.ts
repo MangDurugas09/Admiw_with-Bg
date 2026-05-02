@@ -2,6 +2,15 @@ import { seedClients } from "./mockClients";
 import type { ClientRecord } from "./types";
 
 let memoryClients: ClientRecord[] = [...seedClients];
+let memoryNotifications: MemoryNotificationRecord[] = [];
+
+export type MemoryNotificationRecord = {
+  id: string;
+  title: string;
+  message: string;
+  audience: "all";
+  createdAt: string;
+};
 
 export function getMemoryClients() {
   return [...memoryClients].sort((a, b) =>
@@ -32,4 +41,27 @@ export function upsertMemoryClient(
 export function resetMemoryClients() {
   memoryClients = [...seedClients];
   return getMemoryClients();
+}
+
+export function getMemoryNotifications() {
+  return [...memoryNotifications].sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export function addMemoryNotification(input: {
+  title: string;
+  message: string;
+  audience?: "all";
+}) {
+  const created: MemoryNotificationRecord = {
+    id: `memory-notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: input.title,
+    message: input.message,
+    audience: input.audience || "all",
+    createdAt: new Date().toISOString(),
+  };
+
+  memoryNotifications = [created, ...memoryNotifications];
+  return created;
 }

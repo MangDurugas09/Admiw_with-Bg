@@ -42,7 +42,10 @@ export async function fetchReceipts() {
 
 export async function patchReceiptStatus(
   receiptId: string,
-  payload: { userId: string; status: "Approved" | "Rejected" }
+  payload: {
+    userId: string;
+    status: "Approved" | "Rejected" | "Pending Verification";
+  },
 ) {
   const response = await fetch(`/api/admin/receipts/${receiptId}`, {
     method: "PATCH",
@@ -53,7 +56,18 @@ export async function patchReceiptStatus(
     body: JSON.stringify(payload),
   });
 
-  return parseResponse<{ receipt: { userId: string; receiptId: string; status: string } }>(
-    response
-  );
+  return parseResponse<{
+    receipt: { userId: string; receiptId: string; status: string };
+  }>(response);
+}
+
+export async function deleteReceipt(receiptId: string) {
+  const response = await fetch(`/api/admin/receipts/${receiptId}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders(),
+    },
+  });
+
+  return parseResponse<{ success: boolean }>(response);
 }

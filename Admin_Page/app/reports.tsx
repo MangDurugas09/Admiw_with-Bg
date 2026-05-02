@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AdminShell } from "@/components/AdminShell";
-import { palette } from "@/lib/theme";
+import { useThemePalette } from "@/lib/theme";
 import { useAdminUsers } from "@/lib/useAdminUsers";
 
 function toCsv(rows: Record<string, string | number>[]) {
@@ -15,6 +15,7 @@ function toCsv(rows: Record<string, string | number>[]) {
 }
 
 export default function ReportsPage() {
+  const palette = useThemePalette();
   const { users, stats } = useAdminUsers();
 
   const topUsers = useMemo(
@@ -26,13 +27,13 @@ export default function ReportsPage() {
 
   return (
     <AdminShell title="Reports" subtitle="Revenue and usage analytics with export options">
-      <View style={panel}>
-        <Text style={title}>Monthly Revenue Report</Text>
-        <Text style={value}>PHP {monthlyRevenue.toLocaleString()}</Text>
+      <View style={panel(palette)}>
+        <Text style={title(palette)}>Monthly Revenue Report</Text>
+        <Text style={value(palette)}>PHP {monthlyRevenue.toLocaleString()}</Text>
       </View>
 
-      <View style={panel}>
-        <Text style={title}>Top Users By Usage</Text>
+      <View style={panel(palette)}>
+        <Text style={title(palette)}>Top Users By Usage</Text>
         {topUsers.map((user, index) => (
           <View key={user._id} style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
             <Text style={{ color: palette.textMuted }}>{index + 1}. {user.name}</Text>
@@ -63,7 +64,7 @@ export default function ReportsPage() {
             URL.revokeObjectURL(url);
           }
         }}
-        style={downloadBtn}
+        style={downloadBtn(palette)}
       >
         <Text style={{ color: "#1b1e2f", fontWeight: "800" }}>Export CSV</Text>
       </Pressable>
@@ -71,31 +72,31 @@ export default function ReportsPage() {
   );
 }
 
-const panel = {
+const panel = (palette: ReturnType<typeof useThemePalette>) => ({
   borderWidth: 1,
   borderColor: palette.cardBorder,
   borderRadius: 14,
-  backgroundColor: "rgba(7, 21, 68, 0.9)",
+  backgroundColor: palette.panel,
   padding: 14,
-};
+});
 
-const title = {
+const title = (palette: ReturnType<typeof useThemePalette>) => ({
   color: palette.text,
   fontSize: 18,
   fontWeight: "800" as const,
-};
+});
 
-const value = {
+const value = (palette: ReturnType<typeof useThemePalette>) => ({
   color: palette.accent,
   fontSize: 28,
   fontWeight: "900" as const,
   marginTop: 6,
-};
+});
 
-const downloadBtn = {
+const downloadBtn = (palette: ReturnType<typeof useThemePalette>) => ({
   borderRadius: 10,
   backgroundColor: palette.accent,
   paddingHorizontal: 14,
   paddingVertical: 10,
   alignSelf: "flex-start" as const,
-};
+});

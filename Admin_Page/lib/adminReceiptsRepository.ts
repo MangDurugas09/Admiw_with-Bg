@@ -10,6 +10,14 @@ type PaymentHistoryItem = {
   status?: string;
   method?: string;
   receiptUri?: string;
+  receiptUrl?: string;
+  receiptURL?: string;
+  receiptImage?: string;
+  imageUri?: string;
+  imageUrl?: string;
+  proofOfPayment?: string;
+  attachmentUrl?: string;
+  url?: string;
 };
 
 type UserDoc = {
@@ -65,7 +73,7 @@ function shouldIncludeHistoryAsReceipt(item: PaymentHistoryItem) {
   const status = (item.status || "").toLowerCase();
   const method = (item.method || "").toLowerCase();
 
-  if (item.receiptUri) {
+  if (getReceiptUri(item)) {
     return true;
   }
 
@@ -90,6 +98,21 @@ function shouldIncludeHistoryAsReceipt(item: PaymentHistoryItem) {
   }
 
   return false;
+}
+
+function getReceiptUri(item: PaymentHistoryItem) {
+  return (
+    item.receiptUri ||
+    item.receiptUrl ||
+    item.receiptURL ||
+    item.receiptImage ||
+    item.imageUri ||
+    item.imageUrl ||
+    item.proofOfPayment ||
+    item.attachmentUrl ||
+    item.url ||
+    ""
+  ).toString();
 }
 
 export async function listAdminReceipts() {
@@ -125,13 +148,15 @@ export async function listAdminReceipts() {
         amount: Number(item.amount || user.payments?.currentBill?.amount || 0),
         submittedAt: item.date || new Date().toISOString(),
         status: mapReceiptStatus(item.status),
-        receiptUri: item.receiptUri || user.payments?.latestReceipt || "",
+        receiptUri: getReceiptUri(item) || user.payments?.latestReceipt || "",
       });
     }
 
     if (
       user.payments?.latestReceipt &&
-      !history.some((entry) => entry.receiptUri === user.payments?.latestReceipt)
+      !history.some(
+        (entry) => getReceiptUri(entry) === user.payments?.latestReceipt,
+      )
     ) {
       receipts.push({
         id: `${userId}-latest-receipt`,
@@ -146,7 +171,9 @@ export async function listAdminReceipts() {
     }
 
     if (
-      (user.payments?.currentBill?.status || "").toLowerCase().includes("pending") &&
+      (user.payments?.currentBill?.status || "")
+        .toLowerCase()
+        .includes("pending") &&
       !history.length &&
       user.payments?.latestReceipt
     ) {
@@ -164,8 +191,86 @@ export async function listAdminReceipts() {
   }
 
   return receipts.sort(
-    (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+    (a, b) =>
+      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
   );
+}
+
+export async function addUserReceipt(input: {
+  userId: string;
+  amount?: number;
+  receiptUri: string;
+  mimeType?: string;
+}) {
+  const mongo = await getMongoClient();
+  if (!mongo) {
+    throw new Error("MongoDB is unavailable");
+  }
+
+  const db = mongo.db(getDatabaseName());
+  const users = db.collection<UserDoc>(USERS_COLLECTION);
+  const now = new Date().toISOString();
+  const receiptId = `receipt-${Date.now()}`;
+
+  const result = await users.findOneAndUpdate(
+    idQuery(input.userId),
+    {
+      $set: {
+        paymentStatus: "Unpaid",
+        "payments.currentBill.status": "Pending Verification",
+        "payments.latestReceipt": input.receiptUri,
+        updatedAt: now,
+      },
+      $push: {
+        "payments.history": {
+          id: receiptId,
+          date: now,
+          amount: Number(input.amount || 0),
+          status: "Pending Verification",
+          method: "Receipt Upload",
+          receiptUri: input.receiptUri,
+          mimeType: input.mimeType || "image/jpeg",
+        },
+      },
+    } as never,
+    { returnDocument: "after" },
+  );
+
+  if (!result) {
+    return null;
+  }
+
+  return {
+    id: receiptId,
+    userId: input.userId,
+    receiptUri: input.receiptUri,
+    submittedAt: now,
+  };
+}
+
+export function normalizeUploadedReceipt(input: {
+  receiptBase64?: string;
+  receiptUri?: string;
+  mimeType?: string;
+}) {
+  const rawReceipt = (input.receiptBase64 || input.receiptUri || "").trim();
+  const mimeType = input.mimeType || "image/jpeg";
+
+  if (!rawReceipt) {
+    return "";
+  }
+
+  if (/^data:image\//i.test(rawReceipt) || /^https?:\/\//i.test(rawReceipt)) {
+    return rawReceipt;
+  }
+
+  if (/^(file|content|blob):/i.test(rawReceipt)) {
+    throw new Error(
+      "Receipt must be uploaded as base64 or a public image URL, not a device-local path.",
+    );
+  }
+
+  return `data:${mimeType};base64,${rawReceipt}`;
 }
 
 export async function updateReceiptStatus(input: {
@@ -201,21 +306,68 @@ export async function updateReceiptStatus(input: {
 
   const nextCurrentBillStatus = input.status === "Approved" ? "Paid" : "Unpaid";
 
-  await users.updateOne(
-    idQuery(input.userId),
-    {
-      $set: {
-        paymentStatus: nextCurrentBillStatus,
-        "payments.currentBill.status": nextCurrentBillStatus,
-        "payments.history": nextHistory,
-        updatedAt: new Date().toISOString(),
-      },
-    }
-  );
+  await users.updateOne(idQuery(input.userId), {
+    $set: {
+      paymentStatus: nextCurrentBillStatus,
+      "payments.currentBill.status": nextCurrentBillStatus,
+      "payments.history": nextHistory,
+      updatedAt: new Date().toISOString(),
+    },
+  });
 
   return {
     userId: input.userId,
     receiptId: input.receiptId,
     status: input.status,
   };
+}
+
+export async function deleteReceipt(receiptId: string) {
+  const mongo = await getMongoClient();
+  if (!mongo) {
+    throw new Error("MongoDB is unavailable");
+  }
+
+  const db = mongo.db(getDatabaseName());
+  const users = db.collection<UserDoc>(USERS_COLLECTION);
+
+  // Find the user that has this receipt in their history
+  const user = await users.findOne({
+    "payments.history": {
+      $elemMatch: {
+        $or: [
+          { id: receiptId },
+          { receiptUri: receiptId },
+          { receiptUrl: receiptId },
+          { receiptURL: receiptId },
+          { receiptImage: receiptId },
+          { imageUri: receiptId },
+          { imageUrl: receiptId },
+          { proofOfPayment: receiptId },
+          { attachmentUrl: receiptId },
+          { url: receiptId },
+        ],
+      },
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  // Remove the receipt from the history array
+  const history = user.payments?.history || [];
+  const nextHistory = history.filter((item) => {
+    const entryId = item.id || `${user._id.toString()}-${item.date || ""}`;
+    return entryId !== receiptId && getReceiptUri(item) !== receiptId;
+  });
+
+  await users.updateOne(idQuery(user._id.toString()), {
+    $set: {
+      "payments.history": nextHistory,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+
+  return true;
 }

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import { AdminShell } from "@/components/AdminShell";
-import { palette } from "@/lib/theme";
+import { useThemePalette } from "@/lib/theme";
 import { useAdminUsers } from "@/lib/useAdminUsers";
 
 export default function BillsPage() {
+  const palette = useThemePalette();
   const { users } = useAdminUsers();
   const [query, setQuery] = useState("");
 
@@ -21,17 +22,17 @@ export default function BillsPage() {
       title="Billing Management"
       subtitle="Paid/Unpaid is automatically based on receipt approval status"
     >
-      <View style={panel}>
+      <View style={panel(palette)}>
         <TextInput
           placeholder="Search users"
           placeholderTextColor="#7f95c5"
           value={query}
           onChangeText={setQuery}
-          style={input}
+          style={input(palette)}
         />
 
         {rows.map((user) => (
-          <View key={user._id} style={row}>
+          <View key={user._id} style={[row(palette), { flexWrap: "wrap" }]}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: palette.text, fontWeight: "800" }}>{user.name}</Text>
               <Text style={{ color: palette.textMuted }}>{user.email}</Text>
@@ -59,31 +60,32 @@ export default function BillsPage() {
   );
 }
 
-const panel = {
+const panel = (palette: ReturnType<typeof useThemePalette>) => ({
   borderWidth: 1,
   borderColor: palette.cardBorder,
   borderRadius: 14,
-  backgroundColor: "rgba(7, 21, 68, 0.9)",
+  backgroundColor: palette.panel,
   padding: 14,
-};
+});
 
-const input = {
+const input = (palette: ReturnType<typeof useThemePalette>) => ({
   borderWidth: 1,
-  borderColor: "rgba(157,178,223,0.35)",
+  borderColor: palette.inputBorder,
   borderRadius: 10,
-  backgroundColor: "rgba(5, 17, 55, 0.95)",
+  backgroundColor: palette.panelSoft,
   color: palette.text,
   paddingHorizontal: 12,
   paddingVertical: 10,
-};
+});
 
-const row = {
+const row = (palette: ReturnType<typeof useThemePalette>) => ({
   marginTop: 10,
   borderWidth: 1,
-  borderColor: "rgba(157,178,223,0.22)",
+  borderColor: palette.rowBorder,
   borderRadius: 10,
   padding: 10,
   flexDirection: "row" as const,
   alignItems: "center" as const,
+  flexWrap: "wrap" as const,
   gap: 10,
-};
+});

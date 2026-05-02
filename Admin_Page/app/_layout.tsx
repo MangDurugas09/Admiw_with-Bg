@@ -1,9 +1,11 @@
-import { Stack, usePathname, useRouter } from "expo-router";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { DarkModeProvider } from "@/lib/darkModeContext";
+import { palette } from "@/lib/theme";
 import { useFonts } from "expo-font";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { palette } from "@/lib/theme";
-import { AuthProvider, useAuth } from "@/lib/auth";
+import "../styles/darkmode.css";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,13 +68,15 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <AuthGate>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        />
-      </AuthGate>
+      <DarkModeProvider>
+        <AuthGate>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          />
+        </AuthGate>
+      </DarkModeProvider>
     </AuthProvider>
   );
 }

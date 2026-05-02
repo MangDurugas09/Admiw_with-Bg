@@ -17,6 +17,14 @@ export type AdminUserRecord = {
   updatedAt: string;
 };
 
+export type AdminNotificationRecord = {
+  id: string;
+  title: string;
+  message: string;
+  audience: "all";
+  createdAt: string;
+};
+
 function authHeaders() {
   const token = getAuthToken();
   return {
@@ -137,6 +145,37 @@ export async function saveSettings(payload: {
       billingCycle: "monthly" | "weekly";
       latePenaltyPercent: number;
     };
+    source: "mongodb" | "memory";
+  }>(response);
+}
+
+export async function fetchAdminNotifications() {
+  const response = await fetch("/api/admin/notifications", {
+    headers: { ...authHeaders() },
+  });
+
+  return parseResponse<{
+    notifications: AdminNotificationRecord[];
+    source: "mongodb" | "memory";
+  }>(response);
+}
+
+export async function createAdminNotification(payload: {
+  title?: string;
+  message: string;
+  audience?: "all";
+}) {
+  const response = await fetch("/api/admin/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseResponse<{
+    notification: AdminNotificationRecord;
     source: "mongodb" | "memory";
   }>(response);
 }
